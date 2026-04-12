@@ -1,0 +1,19 @@
+[package]
+name = "search-engine"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "search-engine"
+path = "main.rs"
+
+# Core search engine is pure stdlib. These crates cover HTTP+TLS, HTML,
+# URL handling, binary persistence, and the web UI — things we aren't
+# going to reimplement.
+[dependencies]
+ureq = "2.10"
+scraper = "0.19"
+url = "2.5"
+serde = { version = "1", features = ["derive"] }
+bincode = "1.3"
+tiny_http = "0.12"
