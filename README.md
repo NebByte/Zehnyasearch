@@ -1,6 +1,29 @@
 # Zehnyasearch
 
-A full-featured search engine built from scratch in Rust. Crawl the web or index local files, then search with BM25 ranking, PageRank, boolean queries, fuzzy matching, and spell correction — all implemented by hand, no search-engine libraries.
+**A full-featured search engine built from scratch in Rust.**
+
+Crawl the web or index local files, then search with BM25 ranking, PageRank, boolean queries, fuzzy matching, and spell correction — all implemented by hand, no search-engine libraries.
+
+```bash
+# Crawl, save, and serve a web UI — three steps
+cargo run --release -- https://example.com --save corpus.bin
+cargo run --release -- --load corpus.bin --serve
+# → http://localhost:8080
+```
+
+## Why build it from scratch?
+
+Lucene, Tantivy, Meilisearch, and Elasticsearch are excellent — but they hide the interesting parts. Zehnyasearch is the opposite: every component is implemented by hand so you can read the code and see exactly how search works end-to-end. The inverted index, the BM25 formula, the PageRank power iteration, the Porter stemmer, the BK-tree for spell correction, the VByte postings compression, the robots.txt-respecting crawler — all of it lives in ~2,500 lines of readable Rust.
+
+No `lucene`, no `tantivy`, no `meilisearch` crate. Just:
+
+- `ureq` for HTTP requests
+- `scraper` for HTML parsing
+- `url` for URL handling
+- `bincode` + `serde` for corpus serialization
+- `tiny_http` for the web UI
+
+Everything else — the search engine itself — is in this repo.
 
 ## Features
 
@@ -45,8 +68,12 @@ compression.rs   Variable-byte encoding for postings compression
 ### Build
 
 ```bash
+git clone https://github.com/NebByte/Zehnyasearch.git
+cd Zehnyasearch
 cargo build --release
 ```
+
+The release binary lands at `./target/release/search-engine`.
 
 ### Usage
 
@@ -69,6 +96,11 @@ Then open [http://localhost:8080](http://localhost:8080) in your browser.
 **Incremental crawl (add pages to an existing corpus):**
 ```bash
 ./target/release/search-engine --load corpus.bin https://another-site.com --save corpus.bin
+```
+
+**Run the built-in benchmark:**
+```bash
+./target/release/search-engine --load corpus.bin --bench
 ```
 
 ### Crawl Options
@@ -120,6 +152,36 @@ When indexing local directories, the following extensions are recognized:
 
 `txt` `md` `rs` `py` `js` `ts` `html` `css` `json` `toml` `yaml` `yml` `xml` `csv` `log` `sh` `bash` `c` `cpp` `h` `hpp` `java` `go` `rb` `php` `swift` `kt` `scala` `sql` `r` `m` `tex` `org` `rst`
 
+## Project Layout
+
+```
+Zehnyasearch/
+├── Cargo.toml
+├── main.rs           CLI entry point and REPL
+├── server.rs         HTTP server and search UI
+├── crawler.rs        Web crawler
+├── index.rs          Inverted index
+├── store.rs          Document store
+├── corpus.rs         Binary serialization
+├── tokenizer.rs      Porter stemmer and tokenization
+├── ranking.rs        BM25 scoring
+├── pagerank.rs       PageRank
+├── boolean.rs        Boolean query parser
+├── fuzzy.rs          Damerau-Levenshtein
+├── bktree.rs         Spell-correction BK-tree
+└── compression.rs    VByte postings encoding
+```
+
+## Contributing
+
+Issues and pull requests are welcome. Good starter ideas:
+
+- Additional tokenizers (non-English languages)
+- More compression schemes for postings (Simple9, PForDelta)
+- Ranking improvements (query-dependent features, proximity scoring)
+- Incremental indexing and deletion support
+- A proper benchmark corpus and latency/recall measurements
+
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE) — free to use, modify, and learn from.
