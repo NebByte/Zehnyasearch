@@ -1,0 +1,125 @@
+# Zehnyasearch
+
+A full-featured search engine built from scratch in Rust. Crawl the web or index local files, then search with BM25 ranking, PageRank, boolean queries, fuzzy matching, and spell correction — all implemented by hand, no search-engine libraries.
+
+## Features
+
+- **BM25 Ranking** — the Okapi BM25 formula with configurable k1/b parameters and smoothed IDF
+- **PageRank** — iterative power-method computation over the crawl link graph, blended into result scoring
+- **Phrase Search** — exact consecutive-term matching with positional index lookups
+- **Boolean Queries** — recursive-descent parser supporting `AND`, `OR`, `NOT`, and parenthesized grouping
+- **Fuzzy Search** — Damerau-Levenshtein distance with edit tolerance up to 2
+- **Spell Correction** — BK-Tree (metric tree) for sub-linear approximate string lookup, with automatic "Did you mean?" suggestions
+- **Variable-Byte Compression** — delta-encoded, VByte-compressed postings lists (50-75% size reduction)
+- **Web Crawler** — polite crawler with `robots.txt` support, configurable depth/delay/domain scope
+- **Local File Indexing** — index directories of source code, docs, and text files (35+ file types)
+- **HTTP Search UI** — clean, Google-style web interface served by a built-in HTTP server
+- **CLI REPL** — interactive terminal search with colored output and inline stats
+- **Corpus Persistence** — save/load the full index to binary for instant restarts
+- **Porter Stemmer** — hand-rolled implementation for English morphological normalization
+
+## Architecture
+
+```
+main.rs          CLI entry point, argument parsing, REPL, benchmarks
+crawler.rs       Web crawler with robots.txt, rate limiting, link extraction
+server.rs        HTTP server and search UI (HTML/CSS inline)
+index.rs         Inverted index with positional postings
+store.rs         Document storage and snippet generation
+corpus.rs        Binary serialization/deserialization of the full index
+ranking.rs       BM25 scoring, phrase search, title/URL/PageRank reranking
+pagerank.rs      PageRank via power iteration
+tokenizer.rs     Tokenization, stop-word removal, Porter stemmer
+boolean.rs       Boolean query parser (recursive descent) and evaluator
+fuzzy.rs         Fuzzy matching with Damerau-Levenshtein distance
+bktree.rs        BK-Tree for fast spell correction
+compression.rs   Variable-byte encoding for postings compression
+```
+
+## Getting Started
+
+### Prerequisites
+
+- [Rust](https://www.rust-lang.org/tools/install) (edition 2021+)
+
+### Build
+
+```bash
+cargo build --release
+```
+
+### Usage
+
+**Crawl a website and search it:**
+```bash
+./target/release/search-engine https://example.com --save corpus.bin
+```
+
+**Index a local directory:**
+```bash
+./target/release/search-engine ./my-documents
+```
+
+**Load a saved corpus and start the web UI:**
+```bash
+./target/release/search-engine --load corpus.bin --serve --port 8080
+```
+Then open [http://localhost:8080](http://localhost:8080) in your browser.
+
+**Incremental crawl (add pages to an existing corpus):**
+```bash
+./target/release/search-engine --load corpus.bin https://another-site.com --save corpus.bin
+```
+
+### Crawl Options
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--max-pages N` | 50 | Maximum pages to crawl |
+| `--depth N` | 2 | Maximum link-follow depth |
+| `--delay MS` | 500 | Milliseconds between requests |
+| `--cross-domain` | off | Allow following links to other domains |
+| `--save PATH` | — | Save corpus to disk after indexing |
+| `--serve` | off | Start the HTTP search UI |
+| `--port N` | 8080 | HTTP server port |
+| `--bench` | off | Run performance benchmarks |
+
+## Search Modes
+
+In both the REPL and the web UI:
+
+| Mode | Syntax | Example |
+|------|--------|---------|
+| Standard (BM25) | `query` | `hash table` |
+| Phrase | `phrase:query` | `phrase:binary search tree` |
+| Boolean | `bool:expression` | `bool:TCP AND socket NOT UDP` |
+| Fuzzy | `fuzzy:query` | `fuzzy:concensus` |
+| Spell check | `spell:query` | `spell:algorthm` |
+
+Boolean queries support `AND`, `OR`, `NOT`, and parentheses:
+```
+bool:memory AND (heap OR stack) NOT garbage
+bool:(leader AND election) OR consensus
+```
+
+## How It Works
+
+1. **Crawling/Indexing** — The crawler fetches pages respecting `robots.txt`, extracts text and links using CSS selectors, and feeds documents into the indexer. Local file indexing walks directories and reads supported file types.
+
+2. **Tokenization** — Text is lowercased, split on non-alphanumeric characters, filtered through a stop-word list, and stemmed using a hand-written Porter stemmer.
+
+3. **Inverted Index** — Each term maps to a postings list containing document IDs, term frequencies, and exact positions (for phrase search). Postings are delta-encoded and compressed with VByte encoding.
+
+4. **Ranking** — Queries are scored with BM25, then reranked with title-match boosts (1.6x), URL-match boosts (1.2x), and a logarithmic PageRank blend.
+
+5. **Spell Correction** — A BK-Tree indexes the vocabulary using Damerau-Levenshtein distance. On zero results, the engine automatically corrects the query and re-searches.
+
+## Supported File Types
+
+When indexing local directories, the following extensions are recognized:
+
+`txt` `md` `rs` `py` `js` `ts` `html` `css` `json` `toml` `yaml` `yml` `xml` `csv` `log` `sh` `bash` `c` `cpp` `h` `hpp` `java` `go` `rb` `php` `swift` `kt` `scala` `sql` `r` `m` `tex` `org` `rst`
+
+## License
+
+[MIT](LICENSE)

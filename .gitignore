@@ -1,0 +1,14 @@
+# Rust build artifacts
+/target
+
+# Corpus binary files (large, regenerable from a crawl)
+*.bin
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
